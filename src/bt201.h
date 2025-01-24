@@ -1,12 +1,12 @@
 /**
  * @file bt201.h
  * @author Mehdi Adham (mehdi.adham@yahoo.com)
- * @brief 
+ * @brief
  * @version 1.0
  * @date 2025-01-10
- * 
+ *
  * @copyright Copyright (c) 2025
- * 
+ *
  */
 #include "Arduino.h"
 
@@ -121,11 +121,23 @@
 
 #define chip_receives_successful "OK\r\n"
 
-#define Chip_reset "AT+CZ\r\n"
+#define cmd_Chip_reset "AT+CZ\r\n"
+#define cmd_Restore_factory "AT+CW\r\n"
 
 // 1. Play volume of specified chip [CA] [CB] [CC] [CD] [CE]
 #define cmd_set_volume "AT+CA%02d\r\n"
 #define cmd_play_pause "AT+CB\r\n"
+#define cmd_Stop "AT+AA00\r\n"
+#define cmd_Play "AT+AA01\r\n"
+#define cmd_Pause "AT+AA02\r\n"
+#define cmd_PP "AT+AA03\r\n"
+#define cmd_Fast_forward "AT+AA04\r\n"
+#define cmd_Fast_rewind "AT+AA05\r\n"
+#define cmd_Next_folder "AT+AA06\r\n"
+#define cmd_Last_folder "AT+AA07\r\n"
+#define cmd_Delete_currently_playing_file "AT+AA08\r\n"
+#define cmd_Play_file_number "AT+AB%d\r\n"
+
 #define cmd_next_song "AT+CC\r\n"
 #define cmd_last_song "AT+CD\r\n"
 #define cmd_volume_UP "AT+CE\r\n"
@@ -152,7 +164,7 @@
 // 4. Setting module silence and DAC closing and opening details [CU] [CS]
 #define cmd_un_mute "AT+CU00\r\n"
 #define cmd_mute "AT+CU01\r\n"
-#define cmd_silent_cancelled_otherwise_silence "AT+CU02\r\n"
+#define cmd_silent "AT+CU02\r\n"
 #define cmd_Turn_off_DAC "AT+CS00\r\n"
 #define cmd_Turn_on_DAC "AT+CS01\r\n"
 
@@ -183,9 +195,9 @@
 #define cmd_default_EQ "AT+CQ00\r\n"
 #define cmd_ROCK_EQ "AT+CQ01\r\n"
 #define cmd_POP_EQ "AT+CQ02\r\n"
-#define cmd_CLASSIC "AT+CQ03\r\n"
-#define cmd_JAZZ "AT+CQ04\r\n"
-#define cmd_COUNTRY "AT+CQ05\r\n"
+#define cmd_CLASSIC_EQ "AT+CQ03\r\n"
+#define cmd_JAZZ_EQ "AT+CQ04\r\n"
+#define cmd_COUNTRY_EQ "AT+CQ05\r\n"
 
 // 11. Set Bluetooth Auto Switch to Background
 #define cmd_Turn_off_automatically_switch_to_Bluetooth "AT+CK00\r\n"
@@ -196,15 +208,43 @@
 #define cmd_Open_Bluetooth_background "AT+CG01\r\n"
 
 // 13. Set whether the key function is turned off and turned on [C1] [C2] [C3] [C4]
-#define cmd_Close_AD_button "AT+C100\r\n"
+#define cmd_Turn_off_AD_button "AT+C100\r\n"
 #define cmd_Turn_on_AD_button "AT+C101\r\n"
-#define cmd_Turned_off_AD_button "AT+C200\r\n"
-#define cmd_Default_AD_button "AT+C201\r\n"
-#define cmd_Retain "AT+C300\r\n"
+#define cmd_Turn_off_return_info "AT+C200\r\n"
+#define cmd_Turn_on_return_info "AT+C201\r\n"
+// #define cmd_Retain "AT+C300\r\n"
 // #define cmd_Retain "AT+C301\r\n"
-#define cmd_Bluetooth_is_set_to_power_on_and_not_return "AT+C400\r\n"
-#define cmd_Bluetooth_is_set_to_call_back_to_last_pair_of_device "AT+C401\r\n"
-// page 23
+#define cmd_turn_off_last_pair_of_device "AT+C400\r\n"
+#define cmd_turn_on_last_pair_of_device "AT+C401\r\n"
+
+// page 23 ...
+
+// Setting Bluetooth
+#define cmd_BLctrl_Call_back_phone_call "AT+BA00\r\n"
+#define cmd_BLctrl_Disconnect "AT+BA01\r\n" // -> Disconnect This only works after the connection  is successfull
+#define cmd_BLctrl_Refuse_to_accept "AT+BA02\r\n"
+#define cmd_BLctrl_Hang_up "AT+BA03\r\n"
+#define cmd_BLctrl_Answer_phone "AT+BA04\r\n" // -> If there is a telephone coming in at present, issue this command,
+                                              // then answer it.In the process of receiving, the relay will hang up.
+#define cmd_BLctrl_Scanning_Device "AT+BA05\r\n"
+#define cmd_EDR_Name "AT+BD%s\r\n" // Bluetooth audio and SPP
+#define cmd_EDR_Pass "AT+BE%s\r\n"
+#define cmd_BLE_Name "AT+BM%s\r\n"
+#define cmd_BLE_Pass "AT+BN%s\r\n"
+#define cmd_Bluetooth_MAC "AT+BS%s\r\n"
+#define cmd_close_Bluetooth_Pass "AT+B100\r\n"
+#define cmd_open_Bluetooth_Pass "AT+B101\r\n"
+#define cmd_close_Bluetooth_call "AT+B200\r\n"
+#define cmd_open_Bluetooth_call "AT+B201\r\n"
+#define cmd_turn_off_Bluetooth_audio "AT+B300\r\n"
+#define cmd_turn_on_Bluetooth_audio "AT+B301\r\n"
+
+#define cmd_turn_off_BLE "AT+B400\r\n" // -> The default is 0x01.
+#define cmd_turn_on_BLE "AT+B401\r\n"
+#define cmd_turn_off_EDR "AT+B500\r\n" // -> The default is 0x01.
+#define cmd_turn_on_EDR "AT+B501\r\n"
+#define cmd_Number_Dialing "AT+BT%s\r\n"
+#define cmd_MAC_Address_for_EDR "AT+BS%s\r\n"
 
 typedef enum
 {
@@ -228,6 +268,34 @@ typedef enum
     idle_mode
 } Chip_Mode_Select;
 
+typedef enum
+{
+    Call_back_phon_call = 0,
+    Disconnect, // -> Disconnect This only works after the connection  is successfull
+    Refuse_to_accept,
+    Hang_up,
+    Answer_phone, // -> If there is a telephone coming in at present, issue this command,
+                  // then answer it.In the process of receiving, the relay will hang up.
+    Scanning_Device
+} Bluetooth_Audio_Control_cmd_Select;
+
+typedef enum
+{
+    Automatically_Enter_Bluetooth = 0, // -> Power-on Automatically Enter Bluetooth.
+    Enters_waiting_state,              // -> Power-on enters a waiting state, requiring users to send mode instructions.
+    to_make_judgments                  // -> Power on to make judgments, play devices with devices, and enter Bluetooth without devices.
+} Power_on_Mode_Select;
+
+typedef enum
+{
+    Default = 0,
+    ROCK,
+    POP,
+    CLASSIC,
+    JAZZ,
+    COUNTRY
+} EQ_Select;
+
 class BT201
 {
     void wait_for_timeOut(int timeOut);
@@ -245,6 +313,16 @@ public:
     String get_response();
     bool volume_set(uint8_t vol);
     bool PlayPause();
+    bool Stop();
+    bool Play();
+    bool Play(int file_number);
+    bool Pause();
+    bool PP();
+    bool Fast_forward();
+    bool Fast_rewind();
+    bool Next_folder();
+    bool Last_folder();
+    bool Delete_currently_playing_file();
     bool Next_Song();
     bool Last_Song();
     bool Volume_UP();
@@ -253,6 +331,36 @@ public:
     bool Chip_Reset();
     bool Chip_Mode(Chip_Mode_Select Chip_Mode);
     bool Mute(bool Mute = true);
+    bool Silent();
+    bool Turn_off_DAC(bool in = true);
+    bool Restore_factory();
+    bool Set_Power_on_Mode(Power_on_Mode_Select Power_on_Mode = Enters_waiting_state);
+    bool Turn_on_auto_return_function(bool in = true);
+    bool Turn_on_Loop_playback(bool in = true);
+    bool Turn_on_recording_function(bool in = true);
+    bool Turn_on_prompt_tone(bool in = true);
+    bool Set_EQ(EQ_Select EQ = Default);
+    bool Turn_on_Bluetooth_Auto_Switch_to_Background(bool in = true);
+    bool Turn_off_AD_button(bool in = true);
+    bool Turn_off_return_information(bool in = true);
+    bool Turn_off_last_pair_of_device(bool in = true);
+
+    bool open_Bluetooth_Pass(bool in = true);
+    bool open_Bluetooth_call(bool in = true);
+    bool Set_Name_for_EDR_Bluetooth(String Name);
+    bool Set_Pass_for_EDR_Bluetooth(String Pass);
+    bool Set_Name_for_BLE_Bluetooth(String Name);
+    bool Set_Pass_for_BLE_Bluetooth(String Pass);
+    bool Call_back_phone_call();
+    bool Disconnect();
+    bool Refuse_to_accept();
+    bool Hang_up();
+    bool Answer_phone();
+    bool Scanning_Device();
+    bool turn_off_BLE(bool in = true);
+    bool turn_off_EDR(bool in = true);
+    bool telephone_number_to_call(String telephone_number);
+    bool Set_MAC_Address_for_EDR(String MAC_Address);
 };
 
 #endif

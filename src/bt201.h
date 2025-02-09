@@ -218,6 +218,15 @@
 #define cmd_turn_on_last_pair_of_device "AT+C401\r\n"
 
 // page 23 ...
+// ...
+//
+
+// File Folder Loop Play in in the specified Path [AF]
+#define cmd_Play_folder_loop "AT+AF/%s/%s\r\n" // *???
+
+// Play a file in the specified path once [AJ]
+#define cmd_Play_file_in_folder_once "AT+AJ/%s/%s\r\n"
+
 
 // Setting Bluetooth
 #define cmd_BLctrl_Call_back_phone_call "AT+BA00\r\n"
@@ -296,6 +305,11 @@ typedef enum
     COUNTRY
 } EQ_Select;
 
+typedef enum{
+    Loop_play =0,
+    Once_play
+} Playback_Mode_Select;
+
 class BT201
 {
     void wait_for_timeOut(int timeOut);
@@ -322,6 +336,8 @@ public:
     bool Fast_rewind();
     bool Next_folder();
     bool Last_folder();
+    bool Play_folder(String folder_name, String filter_fileType = "*.????");
+    bool Play_file_in_folder(String file_name, String folder_name);
     bool Delete_currently_playing_file();
     bool Next_Song();
     bool Last_Song();

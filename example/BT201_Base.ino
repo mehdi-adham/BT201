@@ -35,6 +35,7 @@ void setup()
   my_bt201.open_Bluetooth_Pass(true);
   my_bt201.Set_Power_on_Mode(Enters_waiting_state);
   my_bt201.Chip_Reset();
+  delay(3500);
   my_bt201.Chip_Mode(U_disk_mode);
   
   my_bt201.volume_set(15);
@@ -54,6 +55,9 @@ void setup()
   // my_bt201.Fast_rewind();
   // my_bt201.Next_folder();
   // my_bt201.Last_folder();
+     my_bt201.Play_folder("02*");
+  // my_bt201.Play_file_in_folder("01*", "02*"); 
+  // my_bt201.Delete_currently_playing_file();
 }
 
 void loop()

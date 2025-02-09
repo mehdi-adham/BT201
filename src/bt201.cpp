@@ -65,11 +65,17 @@ String BT201::wait_for_get_response(int timeOut)
     if (BT201_Serial->available())
     {
       char val = (char)BT201_Serial->read();
-      data += val;
-      if (val == '\n')
+      if (val == '\r')
       {
+        // data += '"\r';
+      }
+      else if (val == '\n')
+      {
+        // data += '"\n';
         return data;
       }
+      else
+        data += val;
     }
 
     Curr_time = millis();
@@ -96,7 +102,7 @@ String BT201::get_response()
   response = "";
   response = wait_for_get_response(timeOut_for_response);
 #ifdef BT201_DEBUG
-  Serial.printf("response:[%s]", response);
+  Serial.printf("response:[%s]\n", response);
 #endif
   return response;
 }
@@ -1093,5 +1099,49 @@ bool BT201::Set_MAC_Address_for_EDR(String MAC_Address)
   else
     return false;
 }
+
+/**
+ * @brief 
+ * 
+ * @param folder_name File Folder Loop Play in in the specified Path.
+ * 01* represents a folder with a prefix of 01 under the root directory, which means that
+ * as long as your folder has a prefix of 01, it can be recognized.Here * stands for "wildcards" and for anything.
+ * 
+ * @param filter_fileType *.???? or *??? play All file's *.mp3 only play mp3 file's *.wav only play wav file's
+ * @return true 
+ * @return false 
+ */
+bool BT201::Play_folder(String folder_name, String filter_fileType){
+
+  BT201_Serial->printf(cmd_Play_folder_loop, folder_name, filter_fileType);
+
+  if (get_response() == chip_receives_successful){
+    BT201::Play();
+    return true;
+  }
+  else
+    return false;
+}
+
+/**
+ * @brief Play a file in the specified path once.
+ * 
+ * @param file_name Ex: file name = "01*" (prefix 01)
+ * @param folder_name Ex: folder name = "011_11???" (prefix 011_11)
+ * @return true 
+ * @return false 
+ */
+bool BT201::Play_file_in_folder(String file_name, String folder_name){
+
+  BT201_Serial->printf(cmd_Play_file_in_folder_once, file_name, folder_name);
+
+  if (get_response() == chip_receives_successful){
+    BT201::Play();
+    return true;
+  }
+  else
+    return false;
+}
+
 
 /* Data Returned Process page 14 */

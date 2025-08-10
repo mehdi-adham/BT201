@@ -53,29 +53,23 @@ void BT201::wait_for_timeOut(int timeOut)
  * @param timeOut
  * @return String
  */
-String BT201::wait_for_get_response(int timeOut)
+String BT201::wait_for_get_response(int timeOut_for_available, int timeOut_for_package)
 {
   String data = "";
+  data.reserve(256);
   int duration;
   unsigned long Curr_time;
   unsigned long Prev_time = millis();
+  rev_busy = true;
 
   while (true)
   {
     if (BT201_Serial->available())
     {
+      Prev_time = millis();
+      timeOut_for_available = timeOut_for_package;
       char val = (char)BT201_Serial->read();
-      if (val == '\r')
-      {
-        // data += '"\r';
-      }
-      else if (val == '\n')
-      {
-        // data += '"\n';
-        return data;
-      }
-      else
-        data += val;
+      data += val;
     }
 
     Curr_time = millis();
@@ -85,8 +79,9 @@ String BT201::wait_for_get_response(int timeOut)
     else
       duration = Curr_time - Prev_time;
 
-    if (duration >= timeOut)
+    if (duration >= timeOut_for_available)
     {
+      rev_busy = false;
       return data;
     }
   }
@@ -102,9 +97,30 @@ String BT201::get_response()
   response = "";
   response = wait_for_get_response(timeOut_for_response);
 #ifdef BT201_DEBUG
-  Serial.printf("response:[%s]\n", response);
+  Serial.print(response);
 #endif
   return response;
+}
+
+/**
+ * @brief
+ *
+ * @return String
+ */
+String BT201::read()
+{
+  return wait_for_get_response(timeOut_for_response);
+}
+
+/**
+ * @brief
+ *
+ * @param timeOut
+ * @return String
+ */
+String BT201::read(int timeOut)
+{
+  return wait_for_get_response(timeOut, timeOut);
 }
 
 /**
@@ -118,7 +134,7 @@ String BT201::get_response()
  */
 bool BT201::Send_CMD(String CMD, int param)
 {
-  BT201_Serial->printf("AT+%S%02d\r\n", CMD, param);
+  BT201_Serial->printf("AT+%s%02d\r\n", CMD, param);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -438,24 +454,7 @@ bool BT201::Set_Baud_Rate(Baud_Rate_Select Baud_Rate)
   BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
-  {
-    delay(1000);
-
-    // reset chip or restart
-    while (max_Resend--)
-    {
-      if (Chip_Reset() == true)
-      {
-        // reinit serial
-        baud_rate = temp_baud_rate;
-        BT201_Serial->begin(baud_rate);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
+    return true;
   else
     return false;
 }
@@ -519,7 +518,13 @@ bool BT201::Chip_Mode(Chip_Mode_Select Chip_Mode)
  */
 bool BT201::Mute(bool Mute)
 {
-  BT201_Serial->print(Mute == true ? cmd_mute : cmd_un_mute);
+  String cmd = "";
+  if (Mute == true)
+    cmd = cmd_mute;
+  else
+    cmd = cmd_un_mute;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -535,7 +540,13 @@ bool BT201::Mute(bool Mute)
  */
 bool BT201::Turn_off_DAC(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_Turn_off_DAC : cmd_Turn_on_DAC);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_Turn_off_DAC;
+  else
+    cmd = cmd_Turn_on_DAC;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -611,11 +622,11 @@ bool BT201::Set_Power_on_Mode(Power_on_Mode_Select Power_on_Mode)
     break;
 
   case Enters_waiting_state:
-    cmd = cmd_Power_on_Automatically_Enter_Bluetooth;
+    cmd = cmd_Power_on_enters_a_waiting_state;
     break;
 
   case to_make_judgments:
-    cmd = cmd_Power_on_Automatically_Enter_Bluetooth;
+    cmd = cmd_Power_on_to_make_judgments;
     break;
 
   default:
@@ -641,7 +652,13 @@ bool BT201::Set_Power_on_Mode(Power_on_Mode_Select Power_on_Mode)
  */
 bool BT201::Turn_on_auto_return_function(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_Turn_on_auto_return_function : cmd_Turn_off_auto_return_function);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_Turn_on_auto_return_function;
+  else
+    cmd = cmd_Turn_off_auto_return_function;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -650,15 +667,66 @@ bool BT201::Turn_on_auto_return_function(bool in)
 }
 
 /**
- * @brief For MUSIC playback, we present two application.
+ * @brief For MUSIC playback, we present two application. Mono Trigger Play
  *
  * @param in
  * @return true
  * @return false
  */
-bool BT201::Turn_on_Loop_playback(bool in)
+bool BT201::Turn_on_Single_Trigger_Play(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_Close_Loop_sequential_playback : cmd_Open_Single_Trigger_Play);
+  String cmd = "";
+  if (in != true)
+    cmd = cmd_Close_Loop_sequential_playback;
+  else
+    cmd = cmd_Open_Single_Trigger_Play;
+
+  BT201_Serial->print(cmd);
+
+  if (get_response() == chip_receives_successful)
+    return true;
+  else
+    return false;
+}
+
+/**
+ * @brief Specified Play Mode.
+ *
+ * @param Play_Mode
+ * @return true
+ * @return false
+ */
+bool BT201::Set_playback_mode(Play_Mode_Select Play_Mode)
+{
+  String cmd = "";
+
+  switch (Play_Mode)
+  {
+  case Set_to_Full_Cycle:
+    cmd = cmd_Set_to_Full_Cycle;
+    break;
+
+  case Set_to_single_device_cycle:
+    cmd = cmd_Set_to_single_device_cycle;
+    break;
+
+  case Set_to_single_loop:
+    cmd = cmd_Set_to_single_loop;
+    break;
+
+  case Set_to_Play_Randomly_on_Single_Device:
+    cmd = cmd_Set_to_Play_Randomly_on_Single_Device;
+    break;
+
+  case Set_to_Folder_Loop:
+    cmd = Set_to_Folder_Loop;
+    break;
+
+  default:
+    break;
+  }
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -674,7 +742,13 @@ bool BT201::Turn_on_Loop_playback(bool in)
  */
 bool BT201::Turn_on_recording_function(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_Turn_on_Recording : cmd_Turn_off_Recording);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_Turn_on_Recording;
+  else
+    cmd = cmd_Turn_off_Recording;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -691,7 +765,13 @@ bool BT201::Turn_on_recording_function(bool in)
  */
 bool BT201::Turn_on_prompt_tone(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_Turn_on_prompt_sound : cmd_Turn_off_prompt_sound);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_Turn_on_prompt_sound;
+  else
+    cmd = cmd_Turn_off_prompt_sound;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -754,7 +834,13 @@ bool BT201::Set_EQ(EQ_Select EQ)
  */
 bool BT201::Turn_off_last_pair_of_device(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_turn_off_last_pair_of_device : cmd_turn_on_last_pair_of_device);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_turn_off_last_pair_of_device;
+  else
+    cmd = cmd_turn_on_last_pair_of_device;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -791,6 +877,12 @@ bool BT201::Turn_on_Bluetooth_Auto_Switch_to_Background(bool in)
  */
 bool BT201::Turn_off_AD_button(bool in)
 {
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_Turn_off_AD_button;
+  else
+    cmd = cmd_Turn_on_AD_button;
+
   BT201_Serial->print(in == true ? cmd_Turn_off_AD_button : cmd_Turn_on_AD_button);
 
   if (get_response() == chip_receives_successful)
@@ -811,7 +903,13 @@ bool BT201::Turn_off_AD_button(bool in)
  */
 bool BT201::Turn_off_return_information(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_Turn_off_return_info : cmd_Turn_on_return_info);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_Turn_off_return_info;
+  else
+    cmd = cmd_Turn_on_return_info;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -829,7 +927,13 @@ bool BT201::Turn_off_return_information(bool in)
  */
 bool BT201::open_Bluetooth_Pass(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_open_Bluetooth_Pass : cmd_close_Bluetooth_Pass);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_open_Bluetooth_Pass;
+  else
+    cmd = cmd_close_Bluetooth_Pass;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -846,8 +950,13 @@ bool BT201::open_Bluetooth_Pass(bool in)
  */
 bool BT201::open_Bluetooth_call(bool in)
 {
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_open_Bluetooth_call;
+  else
+    cmd = cmd_close_Bluetooth_call;
 
-  BT201_Serial->print(in == true ? cmd_open_Bluetooth_call : cmd_close_Bluetooth_call);
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -1035,7 +1144,13 @@ bool BT201::Scanning_Device()
  */
 bool BT201::turn_off_BLE(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_turn_off_BLE : cmd_turn_on_BLE);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_turn_off_BLE;
+  else
+    cmd = cmd_turn_on_BLE;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -1055,7 +1170,13 @@ bool BT201::turn_off_BLE(bool in)
  */
 bool BT201::turn_off_EDR(bool in)
 {
-  BT201_Serial->print(in == true ? cmd_turn_off_EDR : cmd_turn_on_EDR);
+  String cmd = "";
+  if (in == true)
+    cmd = cmd_turn_off_EDR;
+  else
+    cmd = cmd_turn_on_EDR;
+
+  BT201_Serial->print(cmd);
 
   if (get_response() == chip_receives_successful)
     return true;
@@ -1101,22 +1222,23 @@ bool BT201::Set_MAC_Address_for_EDR(String MAC_Address)
 }
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  * @param folder_name File Folder Loop Play in in the specified Path.
  * 01* represents a folder with a prefix of 01 under the root directory, which means that
  * as long as your folder has a prefix of 01, it can be recognized.Here * stands for "wildcards" and for anything.
- * 
+ *
  * @param filter_fileType *.???? or *??? play All file's *.mp3 only play mp3 file's *.wav only play wav file's
- * @return true 
- * @return false 
+ * @return true
+ * @return false
  */
-bool BT201::Play_folder(String folder_name, String filter_fileType){
+bool BT201::Play_folder(String folder_name, String filter_fileType)
+{
 
   BT201_Serial->printf(cmd_Play_folder_loop, folder_name, filter_fileType);
 
-  if (get_response() == chip_receives_successful){
-    BT201::Play();
+  if (get_response() == chip_receives_successful)
+  {
     return true;
   }
   else
@@ -1125,23 +1247,124 @@ bool BT201::Play_folder(String folder_name, String filter_fileType){
 
 /**
  * @brief Play a file in the specified path once.
- * 
+ *
  * @param file_name Ex: file name = "01*" (prefix 01)
  * @param folder_name Ex: folder name = "011_11???" (prefix 011_11)
- * @return true 
- * @return false 
+ * @return true
+ * @return false
  */
-bool BT201::Play_file_in_folder(String file_name, String folder_name){
+bool BT201::Play_file_in_folder(String file_name, String folder_name)
+{
 
-  BT201_Serial->printf(cmd_Play_file_in_folder_once, file_name, folder_name);
+  BT201_Serial->printf(cmd_Play_file_in_folder_once, folder_name, file_name);
 
-  if (get_response() == chip_receives_successful){
-    BT201::Play();
+  if (get_response() == chip_receives_successful)
+  {
     return true;
   }
   else
     return false;
 }
 
-
 /* Data Returned Process page 14 */
+/**
+ * @brief Get volume
+ *
+ * @return int
+ */
+int BT201::Get_volume()
+{
+  int ret;
+  BT201_Serial->print(cmd_get_volume);
+  String res = get_response();
+
+  sscanf(res.c_str(), "QA+%02d\r\n", &ret);
+
+  return ret;
+}
+
+/**
+ * @brief Get chip mode
+ *
+ * @return Chip_Mode_Select
+ */
+Chip_Mode_Select BT201::Get_chip_mode()
+{
+  Chip_Mode_Select ret;
+
+  BT201_Serial->print(cmd_get_chip_mode);
+  String res = get_response();
+
+  sscanf(res.c_str(), "QM+%02d\r\n", &ret);
+
+  return ret;
+}
+
+/**
+ * @brief
+ *
+ * @return Bluetooth_Status_Select
+ */
+Bluetooth_Status_Select BT201::Get_bluetooth_status()
+{
+  Bluetooth_Status_Select ret;
+
+  BT201_Serial->print(cmd_get_bluetooth_status);
+  String res = get_response();
+
+  sscanf(res.c_str(), "TS+%02d\r\n", &ret);
+
+  return ret;
+}
+
+/**
+ * @brief
+ *
+ * @return int
+ */
+int BT201::Get_total_time_of_current_playing_file()
+{
+  int ret;
+
+  BT201_Serial->print(cmd_get_total_time_of_current_playing_file);
+  String res = get_response();
+
+  sscanf(res.c_str(), "MT+%x\r\n", &ret);
+
+  return ret;
+}
+
+/**
+ * @brief
+ *
+ * @return int
+ */
+int BT201::Get_time_of_current_playing_file()
+{
+  int ret;
+
+  BT201_Serial->print(cmd_get_time_of_current_playing_file);
+  String res = wait_for_get_response(100,100);
+
+  sscanf(res.c_str(), "MK+%x\r\nOK\r\n", &ret);
+
+  return ret;
+}
+
+/**
+ * @brief
+ *
+ * @return String
+ */
+String BT201::Get_name_of_current_playing_file()
+{
+  char dir[40];
+  char ret[40];
+
+  BT201_Serial->print(cmd_get_name_of_current_playing_file);
+  String res = get_response();
+
+  sscanf(res.c_str(), "MF+/%s\t/%s\r\nOK\r\n", dir, ret);
+
+  return ret;
+}

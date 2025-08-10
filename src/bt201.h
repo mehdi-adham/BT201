@@ -227,6 +227,11 @@
 // Play a file in the specified path once [AJ]
 #define cmd_Play_file_in_folder_once "AT+AJ/%s/%s\r\n"
 
+#define cmd_Set_to_Full_Cycle "AT+AC00\r\n"                     // Set to Full Cycle
+#define cmd_Set_to_single_device_cycle "AT+AC01\r\n"            // cmd_Set_to_single_device_cycle
+#define cmd_Set_to_single_loop "AT+AC02\r\n"                    // cmd_Set_to_single loop
+#define cmd_Set_to_Play_Randomly_on_Single_Device "AT+AC03\r\n" // cmd_Set_to_Play_Randomly_on_Single_Device
+#define cmd_Set_to_Folder_Loop "AT+AC04\r\n"                    // cmd_Set_to_Folder_Loop
 
 // Setting Bluetooth
 #define cmd_BLctrl_Call_back_phone_call "AT+BA00\r\n"
@@ -254,6 +259,125 @@
 #define cmd_turn_on_EDR "AT+B501\r\n"
 #define cmd_Number_Dialing "AT+BT%s\r\n"
 #define cmd_MAC_Address_for_EDR "AT+BS%s\r\n"
+
+// TS+01 // This status indicates that Bluetooth is currently connected successfully, but no music has been played yet.
+// TS+02 // Music playing
+// QA+04 // representing the volume returned to the host at 04.
+
+// // The chip will return the below information after playback.
+// MV+01 // This refers to the on-line equipment, refers to the Udisk on-line, that is,BIT(2)
+// MD+01 // This refers to the current work of the Udisk that is, BIT (2)
+// MO+00000052 // The current play is the 52 song
+
+// // The chip will return the below information at the beginning of playback.
+// M1+00000053 // The file playing by the current device is 0x53
+// M2+00000055 // The total number of files on the current device is 0x55. Note that it is a legitimateaudio file.
+// MT+00000097 // The total time of the current file is 0x97 seconds
+// MK+00000000 // The current file has been played to 0x00 seconds
+// MF+Arman Garshasbi - Zemestan.mp3 // The name of the file currently playing is xxxxx.Here the file name is complete
+
+#define cmd_get_total_time_of_current_playing_file "AT+MT\r\n"
+#define cmd_get_time_of_current_playing_file "AT+MK\r\n"
+#define cmd_get_name_of_current_playing_file "AT+MF\r\n"
+
+// // The below parameters are the active return of power on the chip to let the user know that the initialization of the chip is successful. The above data chip only returns once when poweron.
+// // The user sends control instructions. It&apos;s better to wait until the below instructions are received before starting.
+// // Data returned by call on chip [QA] [QT] [QM] [QN] [QK] [QG] [Q1]
+// AT+VER2.3-20191115 // This represents the firmware version and the last update date.Because you want to add functionality and bug fixes, it changes
+// QA+24 // The volume returned by power on the chip is level 24
+// QM+00 // The "Bluetooth mode" when the power returns to the mode on the chip
+// QN+01 // On-chip default start prompt sounds, such as Bluetooth status prompt sounds
+// QK+01 // The chip supports non-Bluetooth state. Bluetooth audio is automatically switched to Bluetooth.
+// QG+01 // The default chip is to turn on Bluetooth backstage
+// Q1+01 // The default function of the chip is to turn on the AD button
+// RB+03
+// C5+00
+// RV+35
+// QM+01
+// TS+00
+// TL+01
+// TL+02
+// T1+01
+// T2+01
+// T3+01
+// T4+01
+// T5+01
+// TE+1234
+// TD+meta
+// TA+93D23AD891B8
+// TM+BT201-BLE
+// TB+94D23AD891B8
+// T6+FFF0
+// T7+FFF1
+// T8+FFF2
+// T9+FFF3
+// TR+0123456789
+
+// // The chip receives the successful return of serial instructions [OK]
+// OK // Chip Receives Instructions and Returns to Host--Only Compete to Send Control Instructions to Host
+
+// Return of Error Information on Chip [ER]
+// ER+1 // The received data frame is not correct
+// ER+2 // The received command does not exist, that is, theAT+KK string you sent can not befound.
+// ER+3 // When recording, the device is not online, or other errors
+// ER+4 // The instructions sent are out of range, or the format of the instructions is incorrect.
+// ER+5 // Specify the device [TF or U disk], and the device is not online or abnormal
+// ER+6 // Specify the path of the device [TF or U disk], and the path does not have a return error
+// ER+7 // undetermined
+// ER+8 // undetermined
+
+// // Common status query return instructions [QA] [QT] [QN] [QK]
+#define cmd_get_volume "AT+QA\r\n" // The chip returns "QA+30", representing the volume returned to the host at30.
+// AT+QT // The chip returns "QT+03", representing a return baud rate of 38400.
+#define cmd_get_chip_mode "AT+QM\r\n" // The chip will return "QM+01", representing the return mode of operationas"PlayU disk or TF card"
+// AT+QN // The chip returns "QN+01", representing the chip with a prompt sound.
+// AT+QK // The chip will return to "QK+01" on behalf of the chip to actively return to Bluetooth
+
+// // Queries for working patterns and instructions returned [QM]
+// AT+QM // The chip will return "QM+01r\n", which means that the return mode is "Bluetooth mode".
+// QM+00 // On-chip power is empty mode, so return to 00
+// QM+01 // Represents Bluetooth Mode
+// QM+02 // U-Disk Play Representing Music Mode
+// QM+03 // TF Card Playing Representing Music Mode
+// QM+04 // SPIFLASH Play on behalf of Music Mode - This version is not supported
+// QM+05 // Representational AUX External Sound Input Mode - This version does not supportQM+06 Input mode of representative sound PC sound card
+// QM+07 // Representational FM Radio Mode
+// QM+08 // Representational sound REC recording mode
+// QM+09 // Represents fake shutdown mode, i.e. idle mode
+
+// // TFCard or U Disk - PC Sound Card - Insert and Pull Back Information [MU]
+// // Insertion and pull-out of the device, all of the below information is returned to the useractively
+// MU+01 // U disk insertion
+// MU+02 // U disk pull-out
+// MU+03 // TF card insertion
+// MU+04 // TF Card pull out
+// MU+05 // Connecting PC--The function of card reader and USB sound card can be realized
+// MU+06 // PC pulls out
+
+// // TF Or the time processing [MT] [MK] of the U disk querying the currently playing file
+// MT+0000001D // The total current file time is 0x1D seconds
+// MK+00000000 // The current playing
+
+#define cmd_get_bluetooth_status "AT+TS\r\n"
+// // Bluetooth Current Status Return - EDR Simple State [TS]
+// TS+00 // Bluetooth has not been connected successfully and is in a waiting pairing state
+// TS+01 // Bluetooth has been successfully connected, but no music has been played yet.free
+// TS+02 // Music playing
+// TS+03 // Talking on the phone
+
+// // Bluetooth Current Status Return - BLE Simple State [TL]
+// TL+00 // BLE is empty
+// TL+04 // BLE disconnect
+// TL+01 // BLE is idle
+// TL+05 // BLE Opens Listening State
+// TL+02 // BLE is broadcasting
+// TL+06 // BLE in Scanning State - Host
+// TL+03 // BLE Connection Successful
+// TL+07 // BLE Search Completion - Host
+
+// // Bluetooth Call Number Return [TT]6.2.3 Bluetooth Call Number Return [TT]
+// TT+13510250437 // The other party's telephone number is 1351050437
+// TT+10086 // The other party's telephone number is 10086
 
 typedef enum
 {
@@ -305,26 +429,56 @@ typedef enum
     COUNTRY
 } EQ_Select;
 
-typedef enum{
-    Loop_play =0,
+typedef enum
+{
+    Loop_play = 0,
     Once_play
 } Playback_Mode_Select;
+
+typedef enum
+{
+    Set_to_Full_Cycle = 0,
+    Set_to_single_device_cycle,
+    Set_to_single_loop,
+    Set_to_Play_Randomly_on_Single_Device,
+    Set_to_Folder_Loop
+} Play_Mode_Select;
+
+typedef enum
+{
+    Bluetooth_not_connected_successfully_and_waiting_pairing_state = 0,
+    Bluetooth_successfully_connected_but_no_music_played,
+    Music_playing,
+    Talking_on_the_phone
+} Bluetooth_Status_Select;
+
+typedef struct
+{
+    int number_of_file_currently_playing;
+    int total_number_of_files;
+    int total_time_of_currently_playing;
+    int current_file_played_at_time;
+    String name_of_file_currently_playing = "";
+} info_beginning_of_playback_t;
 
 class BT201
 {
     void wait_for_timeOut(int timeOut);
-    String wait_for_get_response(int timeOut);
+    String wait_for_get_response(int timeOut_for_available, int timeOut_for_package = 5);
     bool Send_CMD(String CMD, int param);
 
 public:
     HardwareSerial *BT201_Serial;
     int baud_rate = 115200;
     String response = "";
-    int timeOut_for_response = 1000; // ms
+    int timeOut_for_response = 100; // ms
     uint8_t max_Resend = 3;
+    bool rev_busy = false;
 
     void begin(HardwareSerial &Serial, bool doReset = false);
     String get_response();
+    String read();
+    String read(int timeOut);
     bool volume_set(uint8_t vol);
     bool PlayPause();
     bool Stop();
@@ -352,7 +506,7 @@ public:
     bool Restore_factory();
     bool Set_Power_on_Mode(Power_on_Mode_Select Power_on_Mode = Enters_waiting_state);
     bool Turn_on_auto_return_function(bool in = true);
-    bool Turn_on_Loop_playback(bool in = true);
+    bool Turn_on_Single_Trigger_Play(bool in = true);
     bool Turn_on_recording_function(bool in = true);
     bool Turn_on_prompt_tone(bool in = true);
     bool Set_EQ(EQ_Select EQ = Default);
@@ -377,6 +531,14 @@ public:
     bool turn_off_EDR(bool in = true);
     bool telephone_number_to_call(String telephone_number);
     bool Set_MAC_Address_for_EDR(String MAC_Address);
+    bool Set_playback_mode(Play_Mode_Select Play_Mode);
+
+    int Get_volume();
+    Chip_Mode_Select Get_chip_mode();
+    Bluetooth_Status_Select Get_bluetooth_status();
+    int Get_total_time_of_current_playing_file();
+    int Get_time_of_current_playing_file();
+    String Get_name_of_current_playing_file();
 };
 
 #endif
